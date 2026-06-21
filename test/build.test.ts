@@ -207,6 +207,62 @@ describe("buildLbx", () => {
     expect(labelXml).toContain("database:dbMergeFieldStyle");
   });
 
+  it("serializes barcodes (QR Code)", async () => {
+    const config: LabelConfig = {
+      paper: { width: TAPE["24mm"].width, format: TAPE["24mm"].format },
+      objects: [
+        {
+          type: "barcode",
+          position: { x: 10, y: 10, width: 50, height: 50 },
+          protocol: "QRCODE",
+          data: "https://example.com",
+          barWidth: 1.2,
+          humanReadable: false,
+          qrCode: { eccLevel: "15%", cellSize: 2, model: 2 },
+        },
+      ],
+    };
+
+    const buf = await buildLbx(config);
+    const zip = await JSZip.loadAsync(buf);
+    const labelXml = await zip.file("label.xml")!.async("string");
+
+    expect(labelXml).toContain("barcode:barcode");
+    expect(labelXml).toContain('protocol="QRCODE"');
+    expect(labelXml).toContain("https://example.com");
+    expect(labelXml).toContain("barcode:qrcodeStyle");
+    expect(labelXml).toContain('eccLevel="15%"');
+  });
+
+  it("serializes barcodes (CODE128)", async () => {
+    const config: LabelConfig = {
+      paper: { width: TAPE["12mm"].width, format: TAPE["12mm"].format },
+      objects: [
+        {
+          type: "barcode",
+          position: { x: 5, y: 3, width: 80, height: 25 },
+          protocol: "CODE128",
+          data: "ABC-12345",
+          humanReadable: true,
+          humanReadableAlignment: "CENTER",
+          checkDigit: true,
+        },
+      ],
+    };
+
+    const buf = await buildLbx(config);
+    const zip = await JSZip.loadAsync(buf);
+    const labelXml = await zip.file("label.xml")!.async("string");
+
+    expect(labelXml).toContain("barcode:barcode");
+    expect(labelXml).toContain('protocol="CODE128"');
+    expect(labelXml).toContain("ABC-12345");
+    expect(labelXml).toContain('humanReadable="true"');
+    expect(labelXml).toContain('humanReadableAlignment="CENTER"');
+    // Should NOT have qrcodeStyle
+    expect(labelXml).not.toContain("barcode:qrcodeStyle");
+  });
+
   it("prop.xml has correct metadata structure", async () => {
     const config: LabelConfig = {
       paper: { width: TAPE["12mm"].width, format: TAPE["12mm"].format },

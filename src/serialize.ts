@@ -6,6 +6,7 @@ import type {
   ImageObject,
   RectObject,
   LineObject,
+  BarcodeObject,
   PenConfig,
   BrushConfig,
   ObjectPosition,
@@ -274,6 +275,50 @@ function serializeLine(obj: LineObject): XmlNode {
   );
 }
 
+function serializeBarcode(obj: BarcodeObject): XmlNode {
+  const barcodeStyle = el("barcode:barcodeStyle", {
+    protocol: obj.protocol,
+    lengths: String(obj.data.length),
+    zeroFill: obj.zeroFill ?? false,
+    barWidth: p(obj.barWidth ?? 1.2),
+    barRatio: obj.barRatio ?? "1:3",
+    humanReadable: obj.humanReadable ?? true,
+    humanReadableAlignment: obj.humanReadableAlignment ?? "LEFT",
+    checkDigit: obj.checkDigit ?? true,
+    autoLengths: "false",
+    margin: "false",
+    sameLengthBar: "false",
+    bearerBar: "false",
+  });
+
+  const data = el("pt:data", {}, obj.data);
+
+  const children: (XmlNode | string)[] = [
+    objectStyleNode(obj.position, obj.pen, obj.brush, obj.objectName, obj.lock),
+    barcodeStyle,
+    data,
+  ];
+
+  // QR Code specific style
+  if (obj.protocol === "QRCODE" && obj.qrCode) {
+    children.push(el("barcode:qrcodeStyle", {
+      model: obj.qrCode.model ?? 2,
+      eccLevel: obj.qrCode.eccLevel ?? "15%",
+      cellSize: p(obj.qrCode.cellSize ?? 2),
+      mbcs: "932",
+      removeCharKind: "0",
+      removeCharString: "",
+      joint: "1",
+      jointSpace: "8",
+      jointVertically: "false",
+      version: obj.qrCode.version ?? "auto",
+      changeVersionDrag: "false",
+    }));
+  }
+
+  return el("barcode:barcode", {}, ...children);
+}
+
 function serializeObject(obj: LabelObject, imageIndex: { current: number }, images: ImageEntry[]): XmlNode {
   switch (obj.type) {
     case "text":
@@ -287,6 +332,8 @@ function serializeObject(obj: LabelObject, imageIndex: { current: number }, imag
       return serializeRect(obj);
     case "line":
       return serializeLine(obj);
+    case "barcode":
+      return serializeBarcode(obj);
   }
 }
 

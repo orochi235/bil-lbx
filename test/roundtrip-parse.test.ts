@@ -124,6 +124,69 @@ describe("round-trip: build → parse", () => {
       expect(obj.control).toBe("FIXEDFRAME");
     }
   });
+
+  it("round-trips a QR code barcode", async () => {
+    const config: LabelConfig = {
+      paper: { width: TAPE["24mm"].width, format: TAPE["24mm"].format },
+      objects: [
+        {
+          type: "barcode",
+          position: { x: 10, y: 10, width: 50, height: 50 },
+          protocol: "QRCODE",
+          data: "https://example.com",
+          barWidth: 1.2,
+          humanReadable: false,
+          checkDigit: true,
+          qrCode: { eccLevel: "15%", cellSize: 2, model: 2 },
+        },
+      ],
+    };
+
+    const lbx = await buildLbx(config);
+    const parsed = await parseLbx(lbx);
+
+    expect(parsed.objects).toHaveLength(1);
+    const obj = parsed.objects[0]!;
+    expect(obj.type).toBe("barcode");
+    if (obj.type === "barcode") {
+      expect(obj.protocol).toBe("QRCODE");
+      expect(obj.data).toBe("https://example.com");
+      expect(obj.barWidth).toBe(1.2);
+      expect(obj.humanReadable).toBe(false);
+      expect(obj.qrCode).toBeDefined();
+      expect(obj.qrCode!.eccLevel).toBe("15%");
+      expect(obj.qrCode!.cellSize).toBe(2);
+    }
+  });
+
+  it("round-trips a CODE128 barcode", async () => {
+    const config: LabelConfig = {
+      paper: { width: TAPE["12mm"].width, format: TAPE["12mm"].format },
+      objects: [
+        {
+          type: "barcode",
+          position: { x: 5, y: 3, width: 80, height: 25 },
+          protocol: "CODE128",
+          data: "ABC-12345",
+          humanReadable: true,
+          humanReadableAlignment: "CENTER",
+        },
+      ],
+    };
+
+    const lbx = await buildLbx(config);
+    const parsed = await parseLbx(lbx);
+
+    const obj = parsed.objects[0]!;
+    expect(obj.type).toBe("barcode");
+    if (obj.type === "barcode") {
+      expect(obj.protocol).toBe("CODE128");
+      expect(obj.data).toBe("ABC-12345");
+      expect(obj.humanReadable).toBe(true);
+      expect(obj.humanReadableAlignment).toBe("CENTER");
+      expect(obj.qrCode).toBeUndefined();
+    }
+  });
 });
 
 describe("parse real .lbx files", () => {

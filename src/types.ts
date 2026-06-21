@@ -162,7 +162,45 @@ export interface LineObject {
   lock?: number;
 }
 
-export type LabelObject = TextObject | ImageObject | RectObject | LineObject;
+export type BarcodeProtocol =
+  | "CODE39" | "CODE128" | "EAN13" | "EAN8" | "UPCA" | "UPCE"
+  | "ITF" | "CODABAR" | "QRCODE" | "DATAMATRIX" | "PDF417"
+  | "MAXICODE" | "GS1-128" | "GS1DATABAR";
+
+export type QrEccLevel = "7%" | "15%" | "25%" | "30%";
+
+export interface BarcodeObject {
+  type: "barcode";
+  position: ObjectPosition;
+  /** The barcode protocol/symbology */
+  protocol: BarcodeProtocol;
+  /** The data encoded in the barcode */
+  data: string;
+  /** Bar width in pt (default 1.2) */
+  barWidth?: number;
+  /** Bar ratio (default "1:3") */
+  barRatio?: string;
+  /** Show human-readable text below the barcode */
+  humanReadable?: boolean;
+  humanReadableAlignment?: "LEFT" | "CENTER" | "RIGHT";
+  /** Include check digit */
+  checkDigit?: boolean;
+  /** Zero-fill shorter data */
+  zeroFill?: boolean;
+  /** QR Code specific options */
+  qrCode?: {
+    model?: number;
+    eccLevel?: QrEccLevel;
+    cellSize?: number;
+    version?: string;
+  };
+  pen?: PenConfig;
+  brush?: BrushConfig;
+  objectName?: string;
+  lock?: number;
+}
+
+export type LabelObject = TextObject | ImageObject | RectObject | LineObject | BarcodeObject;
 
 // --- Database / mail merge ---
 

@@ -7,6 +7,9 @@ import type {
   ImageObject,
   RectObject,
   LineObject,
+  BarcodeObject,
+  BarcodeProtocol,
+  QrEccLevel,
   PaperConfig,
   PenConfig,
   BrushConfig,
@@ -100,6 +103,11 @@ export async function parseLbx(
     for (const node of asArray(objectsNode["image:image"])) {
       objects.push(await parseImageObject(node, zip));
     }
+
+    // Parse barcode objects
+    for (const node of asArray(objectsNode["barcode:barcode"])) {
+      objects.push(parseBarcodeObject(node));
+    }
   }
 
   // Parse database config
@@ -153,6 +161,12 @@ function boolAttr(node: Record<string, unknown>, name: string): boolean | undefi
   const val = attr(node, name);
   if (val === undefined) return undefined;
   return val === "true";
+}
+
+function ptAttr(node: Record<string, unknown>, name: string): number | undefined {
+  const val = attr(node, name);
+  if (val === undefined) return undefined;
+  return parseFloat(val.replace("pt", ""));
 }
 
 /** Ensure a value is always an array (handles single-element case from XML parser) */
@@ -548,6 +562,72 @@ async function parseImageObject(
       const color = attr(transparentNode, "color");
       obj.transparent = color ? { flag, color } : { flag };
     }
+  }
+
+  const pen = penNode ? parsePen(penNode) : undefined;
+  if (pen) obj.pen = pen;
+
+  const brush = brushNode ? parseBrush(brushNode) : undefined;
+  if (brush) obj.brush = brush;
+
+  if (expandedNode) {
+    const objectName = attr(expandedNode, "objectName");
+    if (objectName) obj.objectName = objectName;
+    const lock = numAttr(expandedNode, "lock");
+    if (lock !== undefined && lock !== 0) obj.lock = lock;
+  }
+
+  return obj;
+}
+
+// --- Barcode object ---
+
+function parseBarcodeObject(node: Record<string, unknown>): BarcodeObject {
+  const styleNode = node["pt:objectStyle"] as Record<string, unknown>;
+  const position = parsePosition(styleNode);
+
+  const penNode = styleNode["pt:pen"] as Record<string, unknown> | undefined;
+  const brushNode = styleNode["pt:brush"] as Record<string, unknown> | undefined;
+  const expandedNode = styleNode["pt:expanded"] as Record<string, unknown> | undefined;
+
+  const barcodeStyleNode = node["barcode:barcodeStyle"] as Record<string, unknown>;
+  const protocol = (attr(barcodeStyleNode, "protocol") ?? "CODE128") as BarcodeProtocol;
+  const data = (node["pt:data"] as string) ?? "";
+
+  const obj: BarcodeObject = {
+    type: "barcode",
+    position,
+    protocol,
+    data,
+  };
+
+  const barWidth = ptAttr(barcodeStyleNode, "barWidth");
+  if (barWidth !== undefined) obj.barWidth = barWidth;
+
+  const barRatio = attr(barcodeStyleNode, "barRatio");
+  if (barRatio) obj.barRatio = barRatio;
+
+  const humanReadable = boolAttr(barcodeStyleNode, "humanReadable");
+  if (humanReadable !== undefined) obj.humanReadable = humanReadable;
+
+  const humanReadableAlignment = attr(barcodeStyleNode, "humanReadableAlignment") as "LEFT" | "CENTER" | "RIGHT" | undefined;
+  if (humanReadableAlignment) obj.humanReadableAlignment = humanReadableAlignment;
+
+  const checkDigit = boolAttr(barcodeStyleNode, "checkDigit");
+  if (checkDigit !== undefined) obj.checkDigit = checkDigit;
+
+  const zeroFill = boolAttr(barcodeStyleNode, "zeroFill");
+  if (zeroFill !== undefined) obj.zeroFill = zeroFill;
+
+  // QR Code specific
+  const qrStyleNode = node["barcode:qrcodeStyle"] as Record<string, unknown> | undefined;
+  if (qrStyleNode) {
+    obj.qrCode = {
+      model: numAttr(qrStyleNode, "model") ?? 2,
+      eccLevel: (attr(qrStyleNode, "eccLevel") ?? "15%") as QrEccLevel,
+      cellSize: ptAttr(qrStyleNode, "cellSize") ?? 2,
+      version: attr(qrStyleNode, "version") ?? "auto",
+    };
   }
 
   const pen = penNode ? parsePen(penNode) : undefined;
