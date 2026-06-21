@@ -91,7 +91,7 @@ describe("buildLbx", () => {
   });
 
   it("includes images as ObjectN.bmp in the zip", async () => {
-    const fakeImage = Buffer.from("BM fake bitmap data");
+    const fakeImage = new TextEncoder().encode("BM fake bitmap data");
 
     const config: LabelConfig = {
       paper: { width: TAPE["24mm"].width, format: TAPE["24mm"].format },
@@ -109,8 +109,8 @@ describe("buildLbx", () => {
     const zip = await JSZip.loadAsync(buf);
 
     expect(zip.file("Object0.bmp")).not.toBeNull();
-    const imgData = await zip.file("Object0.bmp")!.async("nodebuffer");
-    expect(imgData.toString()).toBe("BM fake bitmap data");
+    const imgData = await zip.file("Object0.bmp")!.async("uint8array");
+    expect(new TextDecoder().decode(imgData)).toBe("BM fake bitmap data");
 
     const labelXml = await zip.file("label.xml")!.async("string");
     expect(labelXml).toContain('fileName="Object0.bmp"');

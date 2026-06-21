@@ -3,9 +3,9 @@ import { serializeLabel } from "./serialize.js";
 import type { LabelConfig } from "./types.js";
 
 /**
- * Build a .lbx file (as a Buffer) from a label configuration.
+ * Build a .lbx file (as a Uint8Array) from a label configuration.
  */
-export async function buildLbx(config: LabelConfig): Promise<Buffer> {
+export async function buildLbx(config: LabelConfig): Promise<Uint8Array> {
   const { labelXml, propXml, images } = serializeLabel(config);
 
   const zip = new JSZip();
@@ -17,7 +17,7 @@ export async function buildLbx(config: LabelConfig): Promise<Buffer> {
   }
 
   const buf = await zip.generateAsync({
-    type: "nodebuffer",
+    type: "uint8array",
     compression: "STORE",
   });
 

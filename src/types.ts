@@ -122,8 +122,8 @@ export interface TextObject {
 export interface ImageObject {
   type: "image";
   position: ObjectPosition;
-  /** The image data as a Buffer (will be written as BMP) */
-  imageData: Buffer;
+  /** The image data (will be written as BMP) */
+  imageData: Uint8Array;
   originalName?: string;
   effect?: ImageEffect;
   monoOperation?: MonoOperation;

@@ -166,7 +166,7 @@ function serializeText(obj: TextObject): XmlNode {
 /** Track images and return filename for each */
 export interface ImageEntry {
   filename: string;
-  data: Buffer;
+  data: Uint8Array;
 }
 
 function serializeImage(obj: ImageObject, imageIndex: number, images: ImageEntry[]): XmlNode {
