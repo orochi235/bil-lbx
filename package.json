@@ -1,5 +1,5 @@
 {
-  "name": "brother-lbx",
+  "name": "bil-lbx",
   "version": "0.1.0",
   "description": "Generate Brother P-touch .lbx label files programmatically",
   "type": "module",
