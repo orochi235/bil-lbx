@@ -36,3 +36,4 @@ An `.lbx` file is a ZIP archive containing:
 - ZIP uses STORE compression (jszip 3.x dropped DEFLATE without pako)
 - XML is serialized without formatting (matches Brother's single-line output)
 - All dimensions are in points (1pt = 1/72 inch)
+- Embedded images are **always 32-bit Windows BMP** — the `.lbx` format embeds no other raster encoding. P-touch Editor rasterizes/transcodes every source format (SVG, PSD, PNG, …) to BMP at import; `originalName` keeps the source filename only as metadata. So `ImageObject.imageData` is an opaque BMP `Uint8Array` by design, not an artificial limit. (Verified against 11 real .lbx files.) The format's separate linked/external-image mechanism is not modeled.
