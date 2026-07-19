@@ -3,6 +3,8 @@
 TypeScript library for generating and parsing Brother P-touch `.lbx` label files — the format used by [P-touch Editor](https://www.brother.com/ptouch).
 
 > **bil** = brother-in-law: related to Brother, but not affiliated with them.
+>
+> Or at least, that's what my in-laws say about me.
 
 Works in the browser and Node (no `Buffer`, no filesystem APIs — image data is `Uint8Array`).
 
