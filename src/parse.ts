@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { XMLParser } from "fast-xml-parser";
 import type {
+  CutConfig,
   LabelConfig,
   LabelObject,
   TextObject,
@@ -121,6 +122,27 @@ export async function parseLbx(
     paper,
     objects,
   };
+
+  // Cut instructions (style:cutLine). Only surfaced when present and
+  // non-empty — "regularCut=0pt freeCut=''" is the no-cuts default.
+  const cutNode = sheet["style:cutLine"];
+  if (cutNode) {
+    const cut: CutConfig = {};
+    const regularCut = ptNum(attr(cutNode, "regularCut"));
+    if (regularCut) cut.regularCut = regularCut;
+    const freeCutStr = attr(cutNode, "freeCut");
+    if (freeCutStr) {
+      const freeCut = freeCutStr
+        .trim()
+        .split(/\s+/)
+        .map((s) => ptNum(s))
+        .filter((n): n is number => n !== undefined);
+      if (freeCut.length > 0) cut.freeCut = freeCut;
+    }
+    if (cut.regularCut !== undefined || cut.freeCut !== undefined) {
+      config.cut = cut;
+    }
+  }
 
   if (database) {
     config.database = database;

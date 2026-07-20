@@ -22,13 +22,8 @@ This library round-trips that archive to and from a plain-data `LabelConfig` obj
 
 ## Install
 
-Not yet published to npm. Consume it as a local dependency:
-
-```jsonc
-// package.json
-"dependencies": {
-  "bil-lbx": "file:../bil-lbx"
-}
+```sh
+npm install bil-lbx
 ```
 
 ## Usage
@@ -108,7 +103,7 @@ npm test        # vitest
 npm run build   # compile to dist/
 ```
 
-Parser fixtures are real `.lbx` samples; see `test/parse.test.ts`.
+The parser suite runs against real `.lbx` samples in `/tmp/lbx-samples` (not committed to the repo) and skips itself when that directory is absent; see `test/parse.test.ts`.
 
 ## License
 

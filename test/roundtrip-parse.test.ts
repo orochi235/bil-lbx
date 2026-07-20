@@ -245,3 +245,28 @@ describe("parse real .lbx files", () => {
     }
   });
 });
+
+describe("round-trip: cut instructions", () => {
+  const base: LabelConfig = {
+    paper: { width: TAPE["12mm"].width, format: TAPE["12mm"].format, height: 300, autoLength: false },
+    objects: [],
+  };
+
+  it("round-trips freeCut positions", async () => {
+    const lbx = await buildLbx({ ...base, cut: { freeCut: [100, 200] } });
+    const parsed = await parseLbx(lbx);
+    expect(parsed.cut).toEqual({ freeCut: [100, 200] });
+  });
+
+  it("round-trips a regularCut interval", async () => {
+    const lbx = await buildLbx({ ...base, cut: { regularCut: 72 } });
+    const parsed = await parseLbx(lbx);
+    expect(parsed.cut).toEqual({ regularCut: 72 });
+  });
+
+  it("omits cut entirely for the no-cuts default", async () => {
+    const lbx = await buildLbx(base);
+    const parsed = await parseLbx(lbx);
+    expect(parsed.cut).toBeUndefined();
+  });
+});

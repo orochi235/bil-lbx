@@ -20,7 +20,8 @@ async function buildLbxFromDir(dirPath: string): Promise<Uint8Array> {
   return zip.generateAsync({ type: "uint8array", compression: "STORE" });
 }
 
-describe("parseLbx", () => {
+// Real .lbx samples are not committed; the suite skips when they're absent.
+describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
   describe("Two-line cable label", () => {
     it("parses paper config correctly", async () => {
       const data = await buildLbxFromDir(join(SAMPLES_DIR, "Two-line cable label"));

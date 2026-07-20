@@ -228,9 +228,19 @@ export interface DatabaseConfig {
 
 // --- Top-level label ---
 
+/** Cut instructions for the sheet (`style:cutLine`): where the printer
+ *  cuts along the label, so one file can hold a whole strip of labels. */
+export interface CutConfig {
+  /** Cut every N pt along the label. Omit/0 = no interval cuts. */
+  regularCut?: number;
+  /** Explicit cut positions in pt from the label's leading edge. */
+  freeCut?: number[];
+}
+
 export interface LabelConfig {
   paper: PaperConfig;
   objects: LabelObject[];
+  cut?: CutConfig;
   database?: DatabaseConfig;
   /** Document version (default "1.10") */
   version?: string;

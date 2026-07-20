@@ -404,7 +404,11 @@ export function serializeLabel(config: LabelConfig): { labelXml: string; propXml
     printerName: paper.printerName ?? "Brother PT-P710BT",
   });
 
-  const cutLine = el("style:cutLine", { regularCut: "0pt", freeCut: "" });
+  const cut = config.cut ?? {};
+  const cutLine = el("style:cutLine", {
+    regularCut: p(cut.regularCut ?? 0),
+    freeCut: (cut.freeCut ?? []).map(p).join(" "),
+  });
 
   // Background dimensions are computed from the paper
   const bgWidth = (paper.height ?? 200) - (paper.marginLeft ?? 2.8) * 2;
