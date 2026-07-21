@@ -13,7 +13,7 @@ reproduced here so it can be regenerated.
 | 32bpp BI_RGB, RGB on white, alpha all 0 | **Blank.** Alpha is read literally — no "all-zero alpha means opaque" fallback |
 | 32bpp BI_RGB, RGB on white, alpha all 255 | Renders as an opaque white-background box (faithful: alpha 255 = fully opaque) |
 | 32bpp BI_RGB, negative height (top-down) | **Crashes P-touch Editor** |
-| 24bpp | Renders |
+| 24bpp | Renders as an opaque white-background box (no alpha channel exists at 24bpp) |
 | 1bpp palette | Renders (displayed through its basic dither pass) |
 | BITMAPV4HEADER + BI_BITFIELDS RGBA masks | Renders, same as RGB+alpha |
 | PNG bytes inside the `ObjectN.bmp` entry | Renders — the entry is content-sniffed, name is cosmetic (macOS version at least) |
