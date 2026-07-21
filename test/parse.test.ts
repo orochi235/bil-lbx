@@ -1,30 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import JSZip from "jszip";
 import { parseLbx } from "../src/index.js";
 
-const SAMPLES_DIR = "/tmp/lbx-samples";
+const FIXTURES_DIR = fileURLToPath(new URL("./fixtures", import.meta.url));
 
-/**
- * Build a .lbx zip from an extracted sample directory.
- */
-async function buildLbxFromDir(dirPath: string): Promise<Uint8Array> {
-  const zip = new JSZip();
-  const files = readdirSync(dirPath);
-  for (const file of files) {
-    const filePath = join(dirPath, file);
-    const data = readFileSync(filePath);
-    zip.file(file, data);
-  }
-  return zip.generateAsync({ type: "uint8array", compression: "STORE" });
+function loadFixture(name: string): Uint8Array {
+  return readFileSync(join(FIXTURES_DIR, `${name}.lbx`));
 }
 
-// Real .lbx samples are not committed; the suite skips when they're absent.
-describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
+describe("parseLbx", () => {
   describe("Two-line cable label", () => {
     it("parses paper config correctly", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Two-line cable label"));
+      const data = loadFixture("Two-line cable label");
       const config = await parseLbx(data);
 
       expect(config.paper.width).toBe(33.6);
@@ -41,7 +31,7 @@ describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
     });
 
     it("parses text objects", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Two-line cable label"));
+      const data = loadFixture("Two-line cable label");
       const config = await parseLbx(data);
 
       // Should have 2 text objects and 1 line object
@@ -63,7 +53,7 @@ describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
     });
 
     it("parses line objects with points and arrow styles", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Two-line cable label"));
+      const data = loadFixture("Two-line cable label");
       const config = await parseLbx(data);
 
       const lineObjects = config.objects.filter((o) => o.type === "line");
@@ -81,13 +71,13 @@ describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
     });
 
     it("parses version from document", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Two-line cable label"));
+      const data = loadFixture("Two-line cable label");
       const config = await parseLbx(data);
       expect(config.version).toBe("1.7");
     });
 
     it("has no database config", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Two-line cable label"));
+      const data = loadFixture("Two-line cable label");
       const config = await parseLbx(data);
       expect(config.database).toBeUndefined();
     });
@@ -95,7 +85,7 @@ describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
 
   describe("Filament Label 3 (text + rect + database)", () => {
     it("parses rect objects", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Filament Label 3"));
+      const data = loadFixture("Filament Label 3");
       const config = await parseLbx(data);
 
       const rects = config.objects.filter((o) => o.type === "rect");
@@ -111,7 +101,7 @@ describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
     });
 
     it("parses database config", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Filament Label 3"));
+      const data = loadFixture("Filament Label 3");
       const config = await parseLbx(data);
 
       expect(config.database).toBeDefined();
@@ -131,7 +121,7 @@ describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
     });
 
     it("parses multiple text objects", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Filament Label 3"));
+      const data = loadFixture("Filament Label 3");
       const config = await parseLbx(data);
 
       const texts = config.objects.filter((o) => o.type === "text");
@@ -143,7 +133,7 @@ describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
     });
 
     it("parses autoLength=true", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Filament Label 3"));
+      const data = loadFixture("Filament Label 3");
       const config = await parseLbx(data);
       expect(config.paper.autoLength).toBe(true);
     });
@@ -151,7 +141,7 @@ describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
 
   describe("Lego icon labels - Food (images)", () => {
     it("parses image objects with data", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Lego icon labels - Food"));
+      const data = loadFixture("Lego icon labels - Food");
       const config = await parseLbx(data);
 
       const images = config.objects.filter((o) => o.type === "image");
@@ -167,7 +157,7 @@ describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
     });
 
     it("parses image originalName", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Lego icon labels - Food"));
+      const data = loadFixture("Lego icon labels - Food");
       const config = await parseLbx(data);
 
       const images = config.objects.filter((o) => o.type === "image");
@@ -178,7 +168,7 @@ describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
     });
 
     it("parses image effect settings", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Lego icon labels - Food"));
+      const data = loadFixture("Lego icon labels - Food");
       const config = await parseLbx(data);
 
       const images = config.objects.filter((o) => o.type === "image");
@@ -191,7 +181,7 @@ describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
     });
 
     it("has text objects too", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Lego icon labels - Food"));
+      const data = loadFixture("Lego icon labels - Food");
       const config = await parseLbx(data);
 
       const texts = config.objects.filter((o) => o.type === "text");
@@ -201,7 +191,7 @@ describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
 
   describe("Keyboard switch canister labels (text + lines + database)", () => {
     it("parses all object types", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Keyboard switch canister labels"));
+      const data = loadFixture("Keyboard switch canister labels");
       const config = await parseLbx(data);
 
       const texts = config.objects.filter((o) => o.type === "text");
@@ -212,7 +202,7 @@ describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
     });
 
     it("parses 24mm tape format", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Keyboard switch canister labels"));
+      const data = loadFixture("Keyboard switch canister labels");
       const config = await parseLbx(data);
 
       expect(config.paper.width).toBe(68);
@@ -222,7 +212,7 @@ describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
     });
 
     it("parses database with multiple merge field styles", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Keyboard switch canister labels"));
+      const data = loadFixture("Keyboard switch canister labels");
       const config = await parseLbx(data);
 
       expect(config.database).toBeDefined();
@@ -234,7 +224,7 @@ describe.skipIf(!existsSync(SAMPLES_DIR))("parseLbx", () => {
     });
 
     it("parses line with INSIDEFRAME pen and SQUARE arrows", async () => {
-      const data = await buildLbxFromDir(join(SAMPLES_DIR, "Keyboard switch canister labels"));
+      const data = loadFixture("Keyboard switch canister labels");
       const config = await parseLbx(data);
 
       const lines = config.objects.filter((o) => o.type === "line");

@@ -103,7 +103,7 @@ npm test        # vitest
 npm run build   # compile to dist/
 ```
 
-The parser suite runs against real `.lbx` samples in `/tmp/lbx-samples` (not committed to the repo) and skips itself when that directory is absent; see `test/parse.test.ts`.
+The parser suite runs against real `.lbx` samples committed in `test/fixtures/`; see `test/parse.test.ts`.
 
 ## License
 
