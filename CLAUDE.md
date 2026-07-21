@@ -16,9 +16,10 @@ An `.lbx` file is a ZIP archive containing:
 - `src/serialize.ts` — converts `LabelConfig` → XML + image list
 - `src/parse.ts` — reads .lbx back into `LabelConfig`
 - `src/build.ts` — packs into ZIP via jszip
-- `src/bmp.ts` — `decodeBmp32`: RGBA decoder for the embedded 32bpp BMPs
-  (P-touch Editor macOS carries artwork in the alpha byte, which platform
-  BMP decoders discard as reserved — consumers must decode via this)
+- `src/bmp.ts` — `decodeBmp32`/`encodeBmp32`: RGBA codec for the embedded
+  32bpp BMPs (P-touch Editor macOS carries artwork in the alpha byte, which
+  platform BMP decoders discard as reserved — consumers must decode via
+  this; writers embed via `encodeBmp32`, which fills RGB *and* alpha)
 
 ## Supported object types
 

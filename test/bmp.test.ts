@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { decodeBmp32 } from "../src/index.js";
+import { decodeBmp32, encodeBmp32 } from "../src/index.js";
 
 /** Build a 32bpp BI_RGB BMP from top-down RGBA pixel rows. */
 function makeBmp32(
@@ -81,6 +81,36 @@ describe("decodeBmp32", () => {
     const bmp = makeBmp32(1, 1, [[0, 0, 0, 255]]);
     new DataView(bmp.buffer).setUint32(30, 3, true); // BI_BITFIELDS
     expect(decodeBmp32(bmp)).toBeNull();
+  });
+
+  it("round-trips encodeBmp32 output exactly", () => {
+    const rgba = new Uint8ClampedArray([
+      // 2x2: red, semi-transparent green, transparent, white
+      255, 0, 0, 255, 0, 255, 0, 128,
+      0, 0, 0, 0, 255, 255, 255, 255,
+    ]);
+    const bmp = encodeBmp32(rgba, 2, 2);
+    const out = decodeBmp32(bmp);
+    expect(out).not.toBeNull();
+    expect(out!.width).toBe(2);
+    expect(out!.height).toBe(2);
+    expect(Array.from(out!.rgba)).toEqual(Array.from(rgba));
+  });
+
+  it("encodeBmp32 writes a plain bottom-up BI_RGB 32bpp header", () => {
+    const bmp = encodeBmp32(new Uint8ClampedArray(4), 1, 1);
+    const view = new DataView(bmp.buffer);
+    expect(bmp[0]).toBe(0x42);
+    expect(bmp[1]).toBe(0x4d);
+    expect(view.getUint32(2, true)).toBe(bmp.length);
+    expect(view.getUint32(14, true)).toBe(40); // BITMAPINFOHEADER
+    expect(view.getInt32(22, true)).toBe(1); // positive height: bottom-up
+    expect(view.getUint16(28, true)).toBe(32);
+    expect(view.getUint32(30, true)).toBe(0); // BI_RGB
+  });
+
+  it("encodeBmp32 rejects mismatched buffer sizes", () => {
+    expect(() => encodeBmp32(new Uint8ClampedArray(4), 2, 2)).toThrow();
   });
 
   it("returns null for non-BMP bytes and truncated files", () => {

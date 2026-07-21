@@ -22,6 +22,52 @@ export interface DecodedBmp {
  * reserved byte blank). Returns null for any other BMP flavor — platform
  * decoders handle those correctly.
  */
+/**
+ * Encode top-down RGBA pixels as a 32bpp uncompressed (BI_RGB) BMP with
+ * real RGB *and* the alpha channel populated — the counterpart to
+ * `decodeBmp32`, and the encoding to use when writing images into a .lbx
+ * (the format embeds no other raster encoding). Alpha-aware readers
+ * (P-touch Editor, `decodeBmp32`) get transparency; naive readers that
+ * skip the reserved byte still see the RGB artwork instead of a black box.
+ */
+export function encodeBmp32(
+  rgba: Uint8ClampedArray | Uint8Array,
+  width: number,
+  height: number,
+): Uint8Array {
+  if (width <= 0 || height <= 0 || rgba.length !== width * height * 4) {
+    throw new Error(`encodeBmp32: rgba length ${rgba.length} != ${width}x${height}x4`);
+  }
+  const stride = width * 4;
+  const out = new Uint8Array(54 + stride * height);
+  const view = new DataView(out.buffer);
+  out[0] = 0x42;
+  out[1] = 0x4d; // 'BM'
+  view.setUint32(2, out.length, true);
+  view.setUint32(10, 54, true); // pixel data offset
+  view.setUint32(14, 40, true); // BITMAPINFOHEADER
+  view.setInt32(18, width, true);
+  view.setInt32(22, height, true); // positive: bottom-up
+  view.setUint16(26, 1, true); // planes
+  view.setUint16(28, 32, true);
+  view.setUint32(30, 0, true); // BI_RGB
+  view.setUint32(34, stride * height, true);
+  view.setInt32(38, 2835, true); // 72 dpi
+  view.setInt32(42, 2835, true);
+  for (let y = 0; y < height; y++) {
+    const dstRow = 54 + (height - 1 - y) * stride;
+    for (let x = 0; x < width; x++) {
+      const s = (y * width + x) * 4;
+      const d = dstRow + x * 4;
+      out[d] = rgba[s + 2]!; // B
+      out[d + 1] = rgba[s + 1]!; // G
+      out[d + 2] = rgba[s]!; // R
+      out[d + 3] = rgba[s + 3]!; // A
+    }
+  }
+  return out;
+}
+
 export function decodeBmp32(bytes: Uint8Array): DecodedBmp | null {
   if (bytes.length < 54 || bytes[0] !== 0x42 || bytes[1] !== 0x4d) return null;
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
