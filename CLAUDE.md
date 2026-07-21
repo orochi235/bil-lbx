@@ -1,6 +1,9 @@
 # brother-lbx
 
 TypeScript library for generating and parsing Brother P-touch `.lbx` label files.
+Published publicly on npm as `bil-lbx` — API changes need a version bump +
+`npm publish` to reach external consumers (lbx-editor uses the sibling
+checkout directly and sees changes immediately).
 
 ## Architecture
 
