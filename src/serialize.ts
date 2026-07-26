@@ -1,4 +1,5 @@
 import { el, xmlDoc, type XmlNode } from "./xml.js";
+import { backgroundFor } from "./length.js";
 import type {
   LabelConfig,
   LabelObject,
@@ -410,14 +411,14 @@ export function serializeLabel(config: LabelConfig): { labelXml: string; propXml
     freeCut: (cut.freeCut ?? []).map(p).join(" "),
   });
 
-  // Background dimensions are computed from the paper
-  const bgWidth = (paper.height ?? 200) - (paper.marginLeft ?? 2.8) * 2;
-  const bgHeight = paper.width - (paper.marginTop ?? 5.6) * 2 - (paper.marginLeft ?? 2.8) * 2 + (paper.marginLeft ?? 2.8) * 2;
+  // The printable band: kept verbatim when the config carries one (so a parsed
+  // label round-trips), otherwise derived from the label length.
+  const bg = config.background ?? backgroundFor(paper, paper.height ?? 200);
   const backGround = el("style:backGround", {
-    x: p((paper.marginLeft ?? 2.8) * 2),
-    y: p(paper.marginLeft ?? 2.8),
-    width: p(bgWidth > 0 ? bgWidth : 100),
-    height: p(paper.width - (paper.marginLeft ?? 2.8) * 2),
+    x: p(bg.x),
+    y: p(bg.y),
+    width: p(bg.width),
+    height: p(bg.height),
     brushStyle: "NULL",
     brushId: "0",
     userPattern: "NONE",

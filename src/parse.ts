@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { XMLParser } from "fast-xml-parser";
 import type {
+  BackgroundConfig,
   CutConfig,
   LabelConfig,
   LabelObject,
@@ -123,6 +124,14 @@ export async function parseLbx(
     objects,
   };
 
+  // The printable band. Under autoLength this is the only record of the
+  // label's real length (paper.height is a placeholder there).
+  const bgNode = sheet["style:backGround"];
+  if (bgNode) {
+    const background = parseBackground(bgNode);
+    if (background) config.background = background;
+  }
+
   // Cut instructions (style:cutLine). Only surfaced when present and
   // non-empty — "regularCut=0pt freeCut=''" is the no-cuts default.
   const cutNode = sheet["style:cutLine"];
@@ -236,6 +245,17 @@ function parsePaper(node: Record<string, unknown>): PaperConfig {
   if (printerName) paper.printerName = printerName;
 
   return paper;
+}
+
+function parseBackground(node: Record<string, unknown>): BackgroundConfig | undefined {
+  const x = ptNum(attr(node, "x"));
+  const y = ptNum(attr(node, "y"));
+  const width = ptNum(attr(node, "width"));
+  const height = ptNum(attr(node, "height"));
+  if (x === undefined || y === undefined || width === undefined || height === undefined) {
+    return undefined;
+  }
+  return { x, y, width, height };
 }
 
 // --- Object position ---

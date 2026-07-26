@@ -62,6 +62,24 @@ const config = await parseLbx(bytes); // Uint8Array | ArrayBuffer
 console.log(config.paper.width, config.objects.length);
 ```
 
+### Label length
+
+Don't read `paper.height` directly — it only holds the length for a
+fixed-length label. Under `autoLength` P-touch parks its 1000mm ceiling
+(2834.4pt) there as a placeholder and records the fitted length as the extent
+of the printable band (`style:backGround`, exposed as `config.background`), so
+taking the height literally yields a 1-meter label.
+
+```ts
+import { labelLengthPt } from "bil-lbx";
+
+const length = labelLengthPt(config); // pt, or undefined if unrecorded
+```
+
+`backgroundFor(paper, length)` builds the matching band when you're authoring a
+label rather than parsing one — the band is inset `TAPE_MARGIN_PT` (5.6pt, 2mm)
+from each end regardless of the paper margins.
+
 ### Lower level
 
 `serializeLabel(config)` returns the raw `{ labelXml, propXml, images }` without zipping, if you need to inspect or post-process the XML.

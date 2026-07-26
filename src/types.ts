@@ -237,9 +237,23 @@ export interface CutConfig {
   freeCut?: number[];
 }
 
+/** The printable band (`style:backGround`) in pt, in paper coordinates.
+ *
+ *  P-touch insets it a fixed 5.6pt (2mm) from each end of the tape — the paper
+ *  margins don't drive it. Under autoLength this band, not `paper.height`, is
+ *  where the label's real length lives: see {@link labelLengthPt}. */
+export interface BackgroundConfig {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface LabelConfig {
   paper: PaperConfig;
   objects: LabelObject[];
+  /** Printable band. Parsed verbatim; derived from the paper when absent. */
+  background?: BackgroundConfig;
   cut?: CutConfig;
   database?: DatabaseConfig;
   /** Document version (default "1.10") */
