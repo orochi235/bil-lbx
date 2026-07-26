@@ -1,5 +1,6 @@
 import { el, xmlDoc, type XmlNode } from "./xml.js";
 import { backgroundFor } from "./length.js";
+import { tapeFormatForWidth } from "./types.js";
 import type {
   LabelConfig,
   LabelObject,
@@ -378,6 +379,16 @@ function serializeDatabase(db: DatabaseConfig): XmlNode {
 
 export function serializeLabel(config: LabelConfig): { labelXml: string; propXml: string; images: ImageEntry[] } {
   const paper = config.paper;
+  // Nothing downstream of here can tell a missing width from a deliberate one:
+  // it would serialize as "undefinedpt" and the format would fall back to a
+  // tape the caller never asked for, yielding a plausible file for the wrong
+  // cassette. Reject it here, where the caller can still see why.
+  if (typeof paper.width !== "number" || !Number.isFinite(paper.width) || paper.width <= 0) {
+    throw new Error(
+      `paper.width must be a positive width in pt, got ${String(paper.width)}. ` +
+        `Standard tapes are in TAPE, e.g. TAPE["24mm"].width.`,
+    );
+  }
   const images: ImageEntry[] = [];
   const imageIndex = { current: 0 };
 
@@ -399,7 +410,10 @@ export function serializeLabel(config: LabelConfig): { labelXml: string; propXml
     paperColor: "#FFFFFF",
     paperInk: "#000000",
     split: "1",
-    format: paper.format ?? 259,
+    // Derived from the width the caller gave rather than defaulted to 12mm's
+    // code: a 24mm paper with no explicit format used to serialize as a 12mm
+    // label, which P-touch opens without complaint at the wrong size.
+    format: paper.format ?? tapeFormatForWidth(paper.width) ?? 259,
     backgroundTheme: "0",
     printerID: paper.printerID ?? 30256,
     printerName: paper.printerName ?? "Brother PT-P710BT",

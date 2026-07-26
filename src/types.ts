@@ -270,3 +270,17 @@ export const TAPE = {
   "24mm": { width: 68, format: 261 },
   "36mm": { width: 102, format: 262 },
 } as const;
+
+export type TapeName = keyof typeof TAPE;
+
+/**
+ * The Brother format code for a tape width in pt, or undefined if no standard
+ * tape is that wide. Lets `paper.format` be derived from the width a caller
+ * already gave rather than defaulted to one particular tape's code.
+ */
+export function tapeFormatForWidth(widthPt: number): number | undefined {
+  for (const tape of Object.values(TAPE)) {
+    if (tape.width === widthPt) return tape.format;
+  }
+  return undefined;
+}

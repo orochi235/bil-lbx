@@ -280,3 +280,41 @@ describe("buildLbx", () => {
     expect(propXml).toContain("meta:revision");
   });
 });
+
+/**
+ * A label carries its tape twice — the paper's width in pt, and Brother's
+ * format code. Only the second one decides what P-touch thinks it opened, so a
+ * config that gives just the width has to be read off the width, not defaulted.
+ */
+describe("paper width and format", () => {
+  it("derives the format code from the paper width when none is given", async () => {
+    const config: LabelConfig = { paper: { width: TAPE["24mm"].width }, objects: [] };
+
+    const zip = await JSZip.loadAsync(await buildLbx(config));
+    const labelXml = await zip.file("label.xml")!.async("string");
+
+    expect(labelXml).toContain(`format="${TAPE["24mm"].format}"`);
+    expect(labelXml).not.toContain(`format="${TAPE["12mm"].format}"`);
+  });
+
+  it("keeps an explicit format over the one the width implies", async () => {
+    const config: LabelConfig = {
+      paper: { width: TAPE["24mm"].width, format: TAPE["36mm"].format },
+      objects: [],
+    };
+
+    const zip = await JSZip.loadAsync(await buildLbx(config));
+    const labelXml = await zip.file("label.xml")!.async("string");
+
+    expect(labelXml).toContain(`format="${TAPE["36mm"].format}"`);
+  });
+
+  it("refuses a config with no usable paper width", async () => {
+    // The shape that motivated this: TAPE["W24"] is undefined, so the width
+    // spread out of it never arrives, and the file used to build anyway — as a
+    // 12mm label, several debugging hours from anything that looked like a clue.
+    const config = { paper: { width: undefined }, objects: [] } as unknown as LabelConfig;
+
+    await expect(buildLbx(config)).rejects.toThrow(/paper\.width/);
+  });
+});
