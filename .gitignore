@@ -1,2 +1,6 @@
 node_modules/
 dist/
+
+# Editor and OS cruft
+.DS_Store
+.idea/

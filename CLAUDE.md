@@ -1,9 +1,9 @@
-# brother-lbx
+# bil-lbx
 
 TypeScript library for generating and parsing Brother P-touch `.lbx` label files.
-Published publicly on npm as `bil-lbx` — API changes need a version bump +
-`npm publish` to reach external consumers (lbx-editor uses the sibling
-checkout directly and sees changes immediately).
+Published publicly on npm as `bil-lbx`. Every consumer — lbx-editor included —
+installs the published package, so nothing sees an API change until it ships:
+a version bump and `npm publish` are how changes reach anyone.
 
 ## Architecture
 
@@ -38,6 +38,23 @@ An `.lbx` file is a ZIP archive containing:
 
 - `npm test` — run vitest
 - `npm run build` — compile TypeScript to dist/
+
+## Releasing
+
+Every release gets a `vX.Y.Z` git tag. `npm version` does that for us, so
+never bump the version by hand:
+
+```sh
+npm version patch      # or minor / major -- commits, tags vX.Y.Z, and the
+                       # postversion hook pushes commit + tag
+npm publish            # prepublishOnly builds and tests first; needs an OTP
+```
+
+npm serves the registry listing (description, README) from the *latest
+published version*, so copy edits only reach the npm page via a release.
+
+Tags v0.1.0 and v0.2.0 were applied retroactively; everything from v0.2.1 on
+is tagged by the flow above.
 
 ## Design decisions
 

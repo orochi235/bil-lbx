@@ -1,7 +1,7 @@
 {
   "name": "bil-lbx",
   "version": "0.2.0",
-  "description": "Generate Brother P-touch .lbx label files programmatically",
+  "description": "Read and write the Brother P-touch .lbx label file format",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -29,13 +29,16 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run build && npm test"
+    "prepublishOnly": "npm run build && npm test",
+    "postversion": "git push --follow-tags"
   },
   "keywords": [
     "brother",
     "p-touch",
     "label",
     "lbx",
+    "file-format",
+    "parser",
     "printer"
   ],
   "license": "MIT",
