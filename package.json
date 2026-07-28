@@ -1,6 +1,6 @@
 {
   "name": "bil-lbx",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Generate Brother P-touch .lbx label files programmatically",
   "type": "module",
   "main": "dist/index.js",
