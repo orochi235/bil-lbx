@@ -275,7 +275,7 @@ describe("buildLbx", () => {
 
     expect(propXml).toContain("meta:properties");
     expect(propXml).toContain("meta:appName");
-    expect(propXml).toContain("brother-lbx");
+    expect(propXml).toContain("bil-lbx");
     expect(propXml).toContain("dcterms:created");
     expect(propXml).toContain("meta:revision");
   });

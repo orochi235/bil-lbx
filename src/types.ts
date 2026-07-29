@@ -260,8 +260,12 @@ export interface LabelConfig {
   version?: string;
   /**
    * Who wrote the file — `pt:document`'s `generator`, read-only.
-   * `com.brother.PtouchEditor` for P-touch Editor's own files, `brother-lbx`
+   * `com.brother.PtouchEditor` for P-touch Editor's own files, `bil-lbx`
    * for ours; other tools write their own.
+   *
+   * Files written by 0.2.1 and earlier say `brother-lbx` — the package's
+   * former name. A consumer that keys behavior off this should accept both,
+   * or accept that an older file reads as third-party.
    *
    * Worth surfacing because it says how much a field can be trusted. P-touch
    * writes boilerplate for attributes it doesn't use — every `pt:brush` in a
@@ -269,7 +273,7 @@ export interface LabelConfig {
    * a fill means nothing — so a reader can't tell a deliberate value from a
    * default. In a file this library wrote, the same attribute carries exactly
    * what the caller set. Ignored on serialize; `serializeLabel` always writes
-   * `brother-lbx`, since it is the generator.
+   * `bil-lbx`, since it is the generator.
    */
   generator?: string;
 }

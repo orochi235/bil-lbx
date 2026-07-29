@@ -467,7 +467,7 @@ export function serializeLabel(config: LabelConfig): { labelXml: string; propXml
       "xmlns:table": NS.table,
       "xmlns:cable": NS.cable,
       version: config.version ?? "1.10",
-      generator: "brother-lbx",
+      generator: "bil-lbx",
     },
     ...docChildren,
   );
@@ -482,7 +482,7 @@ export function serializeLabel(config: LabelConfig): { labelXml: string; propXml
       "xmlns:dc": "http://purl.org/dc/elements/1.1/",
       "xmlns:dcterms": "http://purl.org/dc/terms/",
     },
-    el("meta:appName", {}, "brother-lbx"),
+    el("meta:appName", {}, "bil-lbx"),
     el("dc:title", {}),
     el("dc:subject", {}),
     el("dc:creator", {}),

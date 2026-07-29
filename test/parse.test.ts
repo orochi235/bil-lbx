@@ -252,7 +252,7 @@ describe("parseLbx", () => {
         objects: [],
       });
 
-      expect((await parseLbx(built)).generator).toBe("brother-lbx");
+      expect((await parseLbx(built)).generator).toBe("bil-lbx");
     });
 
     it("leaves the generator undefined when the document has no such attribute", async () => {
