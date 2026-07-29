@@ -258,6 +258,20 @@ export interface LabelConfig {
   database?: DatabaseConfig;
   /** Document version (default "1.10") */
   version?: string;
+  /**
+   * Who wrote the file — `pt:document`'s `generator`, read-only.
+   * `com.brother.PtouchEditor` for P-touch Editor's own files, `brother-lbx`
+   * for ours; other tools write their own.
+   *
+   * Worth surfacing because it says how much a field can be trusted. P-touch
+   * writes boilerplate for attributes it doesn't use — every `pt:brush` in a
+   * P-touch file is `style="NULL"`, including on text and image objects where
+   * a fill means nothing — so a reader can't tell a deliberate value from a
+   * default. In a file this library wrote, the same attribute carries exactly
+   * what the caller set. Ignored on serialize; `serializeLabel` always writes
+   * `brother-lbx`, since it is the generator.
+   */
+  generator?: string;
 }
 
 /** Standard tape widths */

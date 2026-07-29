@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import JSZip from "jszip";
-import { parseLbx } from "../src/index.js";
+import { buildLbx, parseLbx, TAPE } from "../src/index.js";
 
 const FIXTURES_DIR = fileURLToPath(new URL("./fixtures", import.meta.url));
 
@@ -232,6 +232,40 @@ describe("parseLbx", () => {
       expect(line.pen?.style).toBe("INSIDEFRAME");
       expect(line.arrowBegin).toBe("SQUARE");
       expect(line.arrowEnd).toBe("SQUARE");
+    });
+  });
+
+  describe("generator", () => {
+    it("reports P-touch Editor as the generator of its own files", async () => {
+      // Worth knowing because it says how far a field can be trusted: P-touch
+      // writes boilerplate where it has nothing to say, so a reader can't tell
+      // a deliberate value from a default.
+      for (const name of ["Two-line cable label", "Lego icon labels - Food"]) {
+        const config = await parseLbx(loadFixture(name));
+        expect(config.generator, name).toBe("com.brother.PtouchEditor");
+      }
+    });
+
+    it("reports this library as the generator of files it writes", async () => {
+      const built = await buildLbx({
+        paper: { width: TAPE["12mm"].width, format: TAPE["12mm"].format },
+        objects: [],
+      });
+
+      expect((await parseLbx(built)).generator).toBe("brother-lbx");
+    });
+
+    it("leaves the generator undefined when the document has no such attribute", async () => {
+      const zip = new JSZip();
+      zip.file(
+        "label.xml",
+        '<?xml version="1.0"?><pt:document xmlns:pt="x" xmlns:style="y" version="1.10">' +
+          "<pt:body><style:sheet><style:paper width=\"33.6pt\"/></style:sheet></pt:body>" +
+          "</pt:document>",
+      );
+      const data = await zip.generateAsync({ type: "uint8array" });
+
+      expect((await parseLbx(data)).generator).toBeUndefined();
     });
   });
 

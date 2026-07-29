@@ -161,6 +161,11 @@ export async function parseLbx(
     config.version = version;
   }
 
+  const generator = attr(ptDoc, "generator");
+  if (generator) {
+    config.generator = generator;
+  }
+
   return config;
 }
 
