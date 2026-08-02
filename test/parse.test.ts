@@ -3,12 +3,41 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import JSZip from "jszip";
-import { buildLbx, parseLbx, TAPE } from "../src/index.js";
+import { buildLbx, parseLbx, TAPE, type BarcodeProtocol } from "../src/index.js";
 
 const FIXTURES_DIR = fileURLToPath(new URL("./fixtures", import.meta.url));
 
 function loadFixture(name: string): Uint8Array {
   return readFileSync(join(FIXTURES_DIR, `${name}.lbx`));
+}
+
+/**
+ * Parse a one-object document built around `barcodeChildren`, the contents of a
+ * `barcode:barcode` element after its `pt:objectStyle`.
+ *
+ * Written out rather than loaded from a fixture: the style elements under test
+ * appear in no fixture here, and spelling the XML is what lets each test name
+ * the attributes it reads. The wrapper supplies the objectStyle, which every
+ * barcode needs and none of these tests is about.
+ */
+async function parseBarcodeXml(barcodeChildren: string) {
+  const xml =
+    '<?xml version="1.0" encoding="UTF-8"?>' +
+    '<pt:document xmlns:pt="http://schemas.brother.info/ptouch/2007/lbx/main"' +
+    ' xmlns:style="http://schemas.brother.info/ptouch/2007/lbx/style"' +
+    ' xmlns:barcode="http://schemas.brother.info/ptouch/2007/lbx/barcode"' +
+    ' version="1.10">' +
+    "<pt:body><style:sheet>" +
+    '<style:paper width="68pt" height="100pt"/>' +
+    "<pt:objects><barcode:barcode>" +
+    '<pt:objectStyle x="5.6pt" y="8.4pt" width="25.6pt" height="25.6pt"/>' +
+    barcodeChildren +
+    "</barcode:barcode></pt:objects>" +
+    "</style:sheet></pt:body></pt:document>";
+
+  const zip = new JSZip();
+  zip.file("label.xml", xml);
+  return parseLbx(await zip.generateAsync({ type: "uint8array" }));
 }
 
 describe("parseLbx", () => {
@@ -266,6 +295,90 @@ describe("parseLbx", () => {
       const data = await zip.generateAsync({ type: "uint8array" });
 
       expect((await parseLbx(data)).generator).toBeUndefined();
+    });
+  });
+
+  describe("GS1 DataBar / RSS", () => {
+    it("parses P-touch's RSS protocol without inventing a name for it", async () => {
+      const doc = await parseBarcodeXml(`
+        <barcode:barcodeStyle protocol="RSS" lengths="0" barWidth="0.8pt"
+          humanReadable="true" checkDigit="false" zeroFill="false"/>
+        <barcode:rssStyle model="RSSExpanded" barWidth="0.1pt" column="4"/>
+        <pt:data>00012345678905</pt:data>`);
+      const obj = doc.objects[0];
+      expect(obj?.type).toBe("barcode");
+      if (obj?.type !== "barcode") return;
+      // Typed against the union deliberately: the parser casts whatever string
+      // the file carries, so only the annotation here says RSS is a protocol we
+      // admit rather than one we quietly pass through.
+      const expected: BarcodeProtocol = "RSS";
+      expect(obj.protocol).toBe(expected);
+    });
+  });
+
+  describe("DataMatrix style", () => {
+    it("reads every attribute P-touch writes", async () => {
+      const doc = await parseBarcodeXml(`
+        <barcode:barcodeStyle protocol="DATAMATRIX" lengths="0" barWidth="0.8pt"
+          humanReadable="false" checkDigit="false" zeroFill="false"/>
+        <barcode:datamatrixStyle model="square" cellSize="1.6pt" macro="none"
+          fnc01="false" joint="1"/>
+        <pt:data>12345678</pt:data>`);
+      const obj = doc.objects[0];
+      if (obj?.type !== "barcode") throw new Error("expected a barcode");
+      expect(obj.dataMatrix).toEqual({
+        model: "square",
+        cellSize: 1.6,
+        macro: "none",
+        fnc01: false,
+        joint: 1,
+      });
+    });
+
+    it("leaves dataMatrix undefined when the element is absent", async () => {
+      const doc = await parseBarcodeXml(`
+        <barcode:barcodeStyle protocol="CODE128" lengths="8" barWidth="0.8pt"
+          humanReadable="true" checkDigit="true" zeroFill="false"/>
+        <pt:data>12345678</pt:data>`);
+      const obj = doc.objects[0];
+      if (obj?.type !== "barcode") throw new Error("expected a barcode");
+      expect(obj.dataMatrix).toBeUndefined();
+    });
+  });
+
+  describe("PDF417 style", () => {
+    it("reads every attribute P-touch writes, keeping auto as auto", async () => {
+      const doc = await parseBarcodeXml(`
+        <barcode:barcodeStyle protocol="PDF417" lengths="0" barWidth="0.8pt"
+          humanReadable="false" checkDigit="false" zeroFill="false"/>
+        <barcode:pdf417Style model="standard" width="0.8pt" aspect="3"
+          row="auto" column="auto" eccLevel="auto" joint="1"/>
+        <pt:data>12345678</pt:data>`);
+      const obj = doc.objects[0];
+      if (obj?.type !== "barcode") throw new Error("expected a barcode");
+      expect(obj.pdf417).toEqual({
+        model: "standard",
+        width: 0.8,
+        aspect: 3,
+        row: "auto",
+        column: "auto",
+        eccLevel: "auto",
+        joint: 1,
+      });
+    });
+
+    it("keeps an explicit row/column/eccLevel rather than normalizing it", async () => {
+      const doc = await parseBarcodeXml(`
+        <barcode:barcodeStyle protocol="PDF417" lengths="0" barWidth="0.8pt"
+          humanReadable="false" checkDigit="false" zeroFill="false"/>
+        <barcode:pdf417Style model="standard" width="0.8pt" aspect="3"
+          row="7" column="2" eccLevel="1" joint="1"/>
+        <pt:data>12345678</pt:data>`);
+      const obj = doc.objects[0];
+      if (obj?.type !== "barcode") throw new Error("expected a barcode");
+      expect(obj.pdf417?.row).toBe("7");
+      expect(obj.pdf417?.column).toBe("2");
+      expect(obj.pdf417?.eccLevel).toBe("1");
     });
   });
 

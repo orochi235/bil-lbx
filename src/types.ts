@@ -162,10 +162,15 @@ export interface LineObject {
   lock?: number;
 }
 
+/** Barcode symbologies P-touch writes. `RSS` is what it actually stamps for
+ *  every GS1 DataBar variant — DataBar's former name, Reduced Space Symbology
+ *  — with the variant itself in `barcode:rssStyle`'s `model` attribute, which
+ *  this library does not model yet. `GS1DATABAR` has never been observed in a
+ *  P-touch-authored file and is kept only because it was published. */
 export type BarcodeProtocol =
   | "CODE39" | "CODE128" | "EAN13" | "EAN8" | "UPCA" | "UPCE"
   | "ITF" | "CODABAR" | "QRCODE" | "DATAMATRIX" | "PDF417"
-  | "MAXICODE" | "GS1-128" | "GS1DATABAR";
+  | "MAXICODE" | "GS1-128" | "GS1DATABAR" | "RSS";
 
 export type QrEccLevel = "7%" | "15%" | "25%" | "30%";
 
@@ -193,6 +198,33 @@ export interface BarcodeObject {
     eccLevel?: QrEccLevel;
     cellSize?: number;
     version?: string;
+  };
+  /** DataMatrix options, from `barcode:datamatrixStyle`. `cellSize` is the
+   *  module width in pt — the 2D counterpart of `barWidth`, and the number the
+   *  object box is measured in. */
+  dataMatrix?: {
+    model?: "square" | "rectangle";
+    cellSize?: number;
+    macro?: string;
+    fnc01?: boolean;
+    joint?: number;
+  };
+  /** PDF417 options, from `barcode:pdf417Style`. `width` is the module width in
+   *  pt and `aspect` the row height as a multiple of it — PDF417 rows are
+   *  taller than they are wide, 3x by default and by ISO 15438's minimum.
+   *
+   *  `row`, `column` and `eccLevel` are strings because P-touch writes the
+   *  literal `"auto"`, the same reason `qrCode.version` is one. A writer that
+   *  states them explicitly pins the symbol it drew; leaving them `"auto"`
+   *  invites the reader to choose its own and redraw a different size. */
+  pdf417?: {
+    model?: string;
+    width?: number;
+    aspect?: number;
+    row?: string;
+    column?: string;
+    eccLevel?: string;
+    joint?: number;
   };
   pen?: PenConfig;
   brush?: BrushConfig;

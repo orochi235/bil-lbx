@@ -677,6 +677,32 @@ function parseBarcodeObject(node: Record<string, unknown>): BarcodeObject {
     };
   }
 
+  // DataMatrix specific
+  const dmStyleNode = node["barcode:datamatrixStyle"] as Record<string, unknown> | undefined;
+  if (dmStyleNode) {
+    obj.dataMatrix = {
+      model: (attr(dmStyleNode, "model") ?? "square") as "square" | "rectangle",
+      cellSize: ptAttr(dmStyleNode, "cellSize") ?? 2,
+      macro: attr(dmStyleNode, "macro") ?? "none",
+      fnc01: boolAttr(dmStyleNode, "fnc01") ?? false,
+      joint: numAttr(dmStyleNode, "joint") ?? 1,
+    };
+  }
+
+  // PDF417 specific
+  const pdfStyleNode = node["barcode:pdf417Style"] as Record<string, unknown> | undefined;
+  if (pdfStyleNode) {
+    obj.pdf417 = {
+      model: attr(pdfStyleNode, "model") ?? "standard",
+      width: ptAttr(pdfStyleNode, "width") ?? 0.8,
+      aspect: numAttr(pdfStyleNode, "aspect") ?? 3,
+      row: attr(pdfStyleNode, "row") ?? "auto",
+      column: attr(pdfStyleNode, "column") ?? "auto",
+      eccLevel: attr(pdfStyleNode, "eccLevel") ?? "auto",
+      joint: numAttr(pdfStyleNode, "joint") ?? 1,
+    };
+  }
+
   const pen = penNode ? parsePen(penNode) : undefined;
   if (pen) obj.pen = pen;
 

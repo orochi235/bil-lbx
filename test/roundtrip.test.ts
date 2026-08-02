@@ -1,7 +1,22 @@
 import { describe, it, expect } from "vitest";
 import { readFile } from "fs/promises";
 import JSZip from "jszip";
-import { buildLbx, TAPE, type LabelConfig } from "../src/index.js";
+import {
+  buildLbx,
+  parseLbx,
+  serializeLabel,
+  TAPE,
+  type LabelConfig,
+  type LabelObject,
+} from "../src/index.js";
+
+/** A 24mm label carrying `obj` and nothing else. */
+function minimalDoc(obj: LabelObject): LabelConfig {
+  return {
+    paper: { width: TAPE["24mm"].width, format: TAPE["24mm"].format },
+    objects: [obj],
+  };
+}
 
 describe("roundtrip comparison", () => {
   it("generates XML structurally similar to a real Device label LBX", async () => {
@@ -122,5 +137,48 @@ describe("roundtrip comparison", () => {
     expect(labelXml).toContain("database:database");
     expect(labelXml).toContain('currentRecord="131"');
     expect(labelXml).toContain('fieldName="Mfr."');
+  });
+});
+
+describe("2D barcode styles round-trip", () => {
+  it("carries a DataMatrix cell size through serialize and back", async () => {
+    const doc = minimalDoc({
+      type: "barcode",
+      position: { x: 5.6, y: 8.4, width: 25.6, height: 25.6 },
+      protocol: "DATAMATRIX",
+      data: "12345678",
+      dataMatrix: { model: "square", cellSize: 1.6, macro: "none", fnc01: false, joint: 1 },
+    });
+    const reparsed = await parseLbx(await buildLbx(doc));
+    const obj = reparsed.objects[0];
+    if (obj?.type !== "barcode") throw new Error("expected a barcode");
+    expect(obj.dataMatrix?.cellSize).toBe(1.6);
+    expect(obj.dataMatrix?.model).toBe("square");
+  });
+
+  it("carries an explicit PDF417 layout through serialize and back", async () => {
+    const doc = minimalDoc({
+      type: "barcode",
+      position: { x: 5.6, y: 8.4, width: 85.6, height: 20 },
+      protocol: "PDF417",
+      data: "12345678",
+      pdf417: { model: "standard", width: 0.8, aspect: 3, row: "7", column: "2", eccLevel: "1", joint: 1 },
+    });
+    const reparsed = await parseLbx(await buildLbx(doc));
+    const obj = reparsed.objects[0];
+    if (obj?.type !== "barcode") throw new Error("expected a barcode");
+    expect(obj.pdf417).toMatchObject({ width: 0.8, aspect: 3, row: "7", column: "2", eccLevel: "1" });
+  });
+
+  it("puts style elements before the data, as P-touch does", () => {
+    const doc = minimalDoc({
+      type: "barcode",
+      position: { x: 0, y: 0, width: 40, height: 40 },
+      protocol: "QRCODE",
+      data: "12345678",
+      qrCode: { model: 2, eccLevel: "15%", cellSize: 1.6, version: "auto" },
+    });
+    const { labelXml } = serializeLabel(doc);
+    expect(labelXml.indexOf("qrcodeStyle")).toBeLessThan(labelXml.indexOf("pt:data"));
   });
 });
