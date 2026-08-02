@@ -199,6 +199,16 @@ export interface BarcodeObject {
     cellSize?: number;
     version?: string;
   };
+  /** DataMatrix options, from `barcode:datamatrixStyle`. `cellSize` is the
+   *  module width in pt — the 2D counterpart of `barWidth`, and the number the
+   *  object box is measured in. */
+  dataMatrix?: {
+    model?: "square" | "rectangle";
+    cellSize?: number;
+    macro?: string;
+    fnc01?: boolean;
+    joint?: number;
+  };
   pen?: PenConfig;
   brush?: BrushConfig;
   objectName?: string;

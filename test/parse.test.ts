@@ -316,6 +316,36 @@ describe("parseLbx", () => {
     });
   });
 
+  describe("DataMatrix style", () => {
+    it("reads every attribute P-touch writes", async () => {
+      const doc = await parseBarcodeXml(`
+        <barcode:barcodeStyle protocol="DATAMATRIX" lengths="0" barWidth="0.8pt"
+          humanReadable="false" checkDigit="false" zeroFill="false"/>
+        <barcode:datamatrixStyle model="square" cellSize="1.6pt" macro="none"
+          fnc01="false" joint="1"/>
+        <pt:data>12345678</pt:data>`);
+      const obj = doc.objects[0];
+      if (obj?.type !== "barcode") throw new Error("expected a barcode");
+      expect(obj.dataMatrix).toEqual({
+        model: "square",
+        cellSize: 1.6,
+        macro: "none",
+        fnc01: false,
+        joint: 1,
+      });
+    });
+
+    it("leaves dataMatrix undefined when the element is absent", async () => {
+      const doc = await parseBarcodeXml(`
+        <barcode:barcodeStyle protocol="CODE128" lengths="8" barWidth="0.8pt"
+          humanReadable="true" checkDigit="true" zeroFill="false"/>
+        <pt:data>12345678</pt:data>`);
+      const obj = doc.objects[0];
+      if (obj?.type !== "barcode") throw new Error("expected a barcode");
+      expect(obj.dataMatrix).toBeUndefined();
+    });
+  });
+
   describe("error handling", () => {
     it("throws on invalid zip data", async () => {
       await expect(parseLbx(new Uint8Array([1, 2, 3]))).rejects.toThrow();
