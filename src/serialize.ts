@@ -293,15 +293,14 @@ function serializeBarcode(obj: BarcodeObject): XmlNode {
     bearerBar: "false",
   });
 
-  const data = el("pt:data", {}, obj.data);
-
   const children: (XmlNode | string)[] = [
     objectStyleNode(obj.position, obj.pen, obj.brush, obj.objectName, obj.lock),
     barcodeStyle,
-    data,
   ];
 
-  // QR Code specific style
+  // Per-symbology style elements sit between barcodeStyle and pt:data, which is
+  // the order P-touch writes them in. Each carries the module size under its own
+  // attribute name, so there is no shared path to fold these into.
   if (obj.protocol === "QRCODE" && obj.qrCode) {
     children.push(el("barcode:qrcodeStyle", {
       model: obj.qrCode.model ?? 2,
@@ -317,6 +316,30 @@ function serializeBarcode(obj: BarcodeObject): XmlNode {
       changeVersionDrag: "false",
     }));
   }
+
+  if (obj.protocol === "DATAMATRIX" && obj.dataMatrix) {
+    children.push(el("barcode:datamatrixStyle", {
+      model: obj.dataMatrix.model ?? "square",
+      cellSize: p(obj.dataMatrix.cellSize ?? 2),
+      macro: obj.dataMatrix.macro ?? "none",
+      fnc01: obj.dataMatrix.fnc01 ?? false,
+      joint: obj.dataMatrix.joint ?? 1,
+    }));
+  }
+
+  if (obj.protocol === "PDF417" && obj.pdf417) {
+    children.push(el("barcode:pdf417Style", {
+      model: obj.pdf417.model ?? "standard",
+      width: p(obj.pdf417.width ?? 0.8),
+      aspect: obj.pdf417.aspect ?? 3,
+      row: obj.pdf417.row ?? "auto",
+      column: obj.pdf417.column ?? "auto",
+      eccLevel: obj.pdf417.eccLevel ?? "auto",
+      joint: obj.pdf417.joint ?? 1,
+    }));
+  }
+
+  children.push(el("pt:data", {}, obj.data));
 
   return el("barcode:barcode", {}, ...children);
 }
