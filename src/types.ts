@@ -209,6 +209,23 @@ export interface BarcodeObject {
     fnc01?: boolean;
     joint?: number;
   };
+  /** PDF417 options, from `barcode:pdf417Style`. `width` is the module width in
+   *  pt and `aspect` the row height as a multiple of it — PDF417 rows are
+   *  taller than they are wide, 3x by default and by ISO 15438's minimum.
+   *
+   *  `row`, `column` and `eccLevel` are strings because P-touch writes the
+   *  literal `"auto"`, the same reason `qrCode.version` is one. A writer that
+   *  states them explicitly pins the symbol it drew; leaving them `"auto"`
+   *  invites the reader to choose its own and redraw a different size. */
+  pdf417?: {
+    model?: string;
+    width?: number;
+    aspect?: number;
+    row?: string;
+    column?: string;
+    eccLevel?: string;
+    joint?: number;
+  };
   pen?: PenConfig;
   brush?: BrushConfig;
   objectName?: string;

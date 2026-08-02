@@ -689,6 +689,20 @@ function parseBarcodeObject(node: Record<string, unknown>): BarcodeObject {
     };
   }
 
+  // PDF417 specific
+  const pdfStyleNode = node["barcode:pdf417Style"] as Record<string, unknown> | undefined;
+  if (pdfStyleNode) {
+    obj.pdf417 = {
+      model: attr(pdfStyleNode, "model") ?? "standard",
+      width: ptAttr(pdfStyleNode, "width") ?? 0.8,
+      aspect: numAttr(pdfStyleNode, "aspect") ?? 3,
+      row: attr(pdfStyleNode, "row") ?? "auto",
+      column: attr(pdfStyleNode, "column") ?? "auto",
+      eccLevel: attr(pdfStyleNode, "eccLevel") ?? "auto",
+      joint: numAttr(pdfStyleNode, "joint") ?? 1,
+    };
+  }
+
   const pen = penNode ? parsePen(penNode) : undefined;
   if (pen) obj.pen = pen;
 

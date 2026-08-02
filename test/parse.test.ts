@@ -346,6 +346,42 @@ describe("parseLbx", () => {
     });
   });
 
+  describe("PDF417 style", () => {
+    it("reads every attribute P-touch writes, keeping auto as auto", async () => {
+      const doc = await parseBarcodeXml(`
+        <barcode:barcodeStyle protocol="PDF417" lengths="0" barWidth="0.8pt"
+          humanReadable="false" checkDigit="false" zeroFill="false"/>
+        <barcode:pdf417Style model="standard" width="0.8pt" aspect="3"
+          row="auto" column="auto" eccLevel="auto" joint="1"/>
+        <pt:data>12345678</pt:data>`);
+      const obj = doc.objects[0];
+      if (obj?.type !== "barcode") throw new Error("expected a barcode");
+      expect(obj.pdf417).toEqual({
+        model: "standard",
+        width: 0.8,
+        aspect: 3,
+        row: "auto",
+        column: "auto",
+        eccLevel: "auto",
+        joint: 1,
+      });
+    });
+
+    it("keeps an explicit row/column/eccLevel rather than normalizing it", async () => {
+      const doc = await parseBarcodeXml(`
+        <barcode:barcodeStyle protocol="PDF417" lengths="0" barWidth="0.8pt"
+          humanReadable="false" checkDigit="false" zeroFill="false"/>
+        <barcode:pdf417Style model="standard" width="0.8pt" aspect="3"
+          row="7" column="2" eccLevel="1" joint="1"/>
+        <pt:data>12345678</pt:data>`);
+      const obj = doc.objects[0];
+      if (obj?.type !== "barcode") throw new Error("expected a barcode");
+      expect(obj.pdf417?.row).toBe("7");
+      expect(obj.pdf417?.column).toBe("2");
+      expect(obj.pdf417?.eccLevel).toBe("1");
+    });
+  });
+
   describe("error handling", () => {
     it("throws on invalid zip data", async () => {
       await expect(parseLbx(new Uint8Array([1, 2, 3]))).rejects.toThrow();
