@@ -81,36 +81,45 @@ export async function parseLbx(
   // Parse paper config
   const paper = parsePaper(sheet["style:paper"]);
 
-  // Parse objects
+  // Parse objects, grouped by element name — the shape fast-xml-parser hands
+  // back. `objects` below puts them into the order the document states, which
+  // is the order they stack in.
   const objectsNode = sheet["pt:objects"];
-  const objects: LabelObject[] = [];
+  const byTag: Record<string, LabelObject[]> = {};
 
   if (objectsNode) {
     // Parse text objects
+    byTag["text:text"] = [];
     for (const node of asArray(objectsNode["text:text"])) {
-      objects.push(parseTextObject(node));
+      byTag["text:text"]!.push(parseTextObject(node));
     }
 
     // Parse rect objects
+    byTag["draw:rect"] = [];
     for (const node of asArray(objectsNode["draw:rect"])) {
-      objects.push(parseRectObject(node));
+      byTag["draw:rect"]!.push(parseRectObject(node));
     }
 
     // Parse poly/line objects
+    byTag["draw:poly"] = [];
     for (const node of asArray(objectsNode["draw:poly"])) {
-      objects.push(parseLineObject(node));
+      byTag["draw:poly"]!.push(parseLineObject(node));
     }
 
     // Parse image objects
+    byTag["image:image"] = [];
     for (const node of asArray(objectsNode["image:image"])) {
-      objects.push(await parseImageObject(node, zip));
+      byTag["image:image"]!.push(await parseImageObject(node, zip));
     }
 
     // Parse barcode objects
+    byTag["barcode:barcode"] = [];
     for (const node of asArray(objectsNode["barcode:barcode"])) {
-      objects.push(parseBarcodeObject(node));
+      byTag["barcode:barcode"]!.push(parseBarcodeObject(node));
     }
   }
+
+  const objects = inDocumentOrder(byTag, objectElementOrder(labelXml));
 
   // Parse database config
   let database: DatabaseConfig | undefined;
@@ -210,6 +219,87 @@ function asArray<T>(val: T | T[] | undefined | null): T[] {
   if (val === undefined || val === null) return [];
   if (Array.isArray(val)) return val;
   return [val];
+}
+
+// --- Object order ---
+
+/**
+ * The names of `pt:objects`'s children, in the order the document lists them.
+ *
+ * Document order is z-order — `pt:objects` lists back to front, so a barcode
+ * written after an image draws over it — but fast-xml-parser's default tree
+ * groups repeated siblings into one array per element name, and nothing in
+ * that shape records how the groups interleaved. So the file is read a second
+ * time with `preserveOrder`, purely for the sequence.
+ *
+ * A second parse rather than a scan of the raw XML: the element names nest
+ * (`draw:rect` contains `draw:rectStyle`, `barcode:barcode` contains
+ * `barcode:barcodeStyle`) and P-touch nests a whole `pt:objects` inside a
+ * group, so a text scan would have to reimplement enough of an XML parser to
+ * know which depth it was at. `label.xml` is a few kilobytes — images live in
+ * their own zip entries — so the second pass costs nothing worth saving.
+ */
+function objectElementOrder(labelXml: string): string[] {
+  const parser = new XMLParser({
+    ignoreAttributes: true,
+    preserveOrder: true,
+    parseTagValue: false,
+    trimValues: false,
+  });
+
+  // With `preserveOrder` every node is a one-key object and every level is an
+  // array, so a child is found by scanning rather than by lookup.
+  let level: unknown = parser.parse(labelXml);
+  for (const name of ["pt:document", "pt:body", "style:sheet", "pt:objects"]) {
+    if (!Array.isArray(level)) return [];
+    const found: unknown = level.find(
+      (entry) => typeof entry === "object" && entry !== null && name in entry,
+    );
+    if (found === undefined) return [];
+    level = (found as Record<string, unknown>)[name];
+  }
+  if (!Array.isArray(level)) return [];
+
+  return level.flatMap((entry) =>
+    typeof entry === "object" && entry !== null
+      ? Object.keys(entry).filter((k) => k !== ":@")
+      : [],
+  );
+}
+
+/**
+ * The parsed objects, restacked into the document's own order.
+ *
+ * Order within one element name already matches the document, so each name's
+ * objects are handed out in turn as that name comes up in `order`.
+ *
+ * Anything `order` does not account for is appended rather than dropped. That
+ * matters more than the ordering does: `objectElementOrder` gives up and
+ * returns nothing on a document shaped unlike the ones we know, and a label
+ * that comes back stacked wrong is a bug, while a label that comes back
+ * missing an object is data loss.
+ */
+function inDocumentOrder(
+  byTag: Record<string, LabelObject[]>,
+  order: string[],
+): LabelObject[] {
+  const taken: Record<string, number> = {};
+  const objects: LabelObject[] = [];
+
+  for (const tag of order) {
+    const bucket = byTag[tag];
+    if (!bucket) continue;
+    const next = taken[tag] ?? 0;
+    if (next >= bucket.length) continue;
+    objects.push(bucket[next]!);
+    taken[tag] = next + 1;
+  }
+
+  for (const [tag, bucket] of Object.entries(byTag)) {
+    for (let i = taken[tag] ?? 0; i < bucket.length; i++) objects.push(bucket[i]!);
+  }
+
+  return objects;
 }
 
 // --- Paper ---

@@ -61,5 +61,11 @@ is tagged by the flow above.
 - Browser-compatible: uses `Uint8Array` not `Buffer` for image data
 - ZIP uses STORE compression (jszip 3.x dropped DEFLATE without pako)
 - XML is serialized without formatting (matches Brother's single-line output)
+- **`LabelObject[]` order is document order, which is z-order.** `pt:objects`
+  lists back to front, so a barcode written after an image draws over it, and
+  both `parseLbx` and `buildLbx` keep that sequence. Parsing costs a second
+  pass over `label.xml` to get it: fast-xml-parser's default tree groups
+  repeated siblings by element name and records nothing about how the groups
+  interleaved, so the order has to be read separately with `preserveOrder`.
 - All dimensions are in points (1pt = 1/72 inch)
 - Embedded images are **always 32-bit Windows BMP** — the `.lbx` format embeds no other raster encoding. P-touch Editor rasterizes/transcodes every source format (SVG, PSD, PNG, …) to BMP at import; `originalName` keeps the source filename only as metadata. So `ImageObject.imageData` is an opaque BMP `Uint8Array` by design, not an artificial limit. (Verified against 11 real .lbx files: every image `fileName` is a bare `ObjectN.bmp` zip entry — images are always stored as files inside the .lbx archive, never referenced by external path.)

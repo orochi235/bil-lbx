@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFile } from "fs/promises";
+import { fileURLToPath } from "url";
+import JSZip from "jszip";
 import { buildLbx, parseLbx, TAPE, type LabelConfig } from "../src/index.js";
 
 describe("round-trip: build → parse", () => {
@@ -268,5 +270,92 @@ describe("round-trip: cut instructions", () => {
     const lbx = await buildLbx(base);
     const parsed = await parseLbx(lbx);
     expect(parsed.cut).toBeUndefined();
+  });
+});
+
+/**
+ * Document order *is* z-order: `pt:objects` lists back to front, so a barcode
+ * written after an image draws over it. The parser used to walk the tree one
+ * element name at a time — every text, then every rect, then every line, image
+ * and barcode — which returned the right objects in an order the file never
+ * stated. A consumer that draws them in the order it is handed them, as
+ * lbx-editor does, then stacks a label wrong and writes the wrong stack back
+ * out on export.
+ */
+describe("round-trip: object order", () => {
+  const paper = { width: TAPE["24mm"].width, format: TAPE["24mm"].format, height: 200, autoLength: false };
+
+  /** One of each type, interleaved so no per-type grouping can reproduce it. */
+  const interleaved: LabelConfig = {
+    paper,
+    objects: [
+      { type: "rect", position: { x: 0, y: 0, width: 10, height: 10 } },
+      { type: "text", position: { x: 10, y: 0, width: 10, height: 10 }, font: { name: "Arial", size: 6 }, data: "a" },
+      { type: "barcode", position: { x: 20, y: 0, width: 10, height: 10 }, protocol: "CODE128", data: "A" },
+      { type: "line", position: { x: 30, y: 0, width: 10, height: 0 }, points: [{ x: 30, y: 0 }, { x: 40, y: 0 }] },
+      { type: "text", position: { x: 40, y: 0, width: 10, height: 10 }, font: { name: "Arial", size: 6 }, data: "b" },
+      { type: "rect", position: { x: 50, y: 0, width: 10, height: 10 } },
+    ],
+  };
+
+  it("returns objects in the order the document lists them", async () => {
+    const parsed = await parseLbx(await buildLbx(interleaved));
+    expect(parsed.objects.map((o) => o.type)).toEqual([
+      "rect", "text", "barcode", "line", "text", "rect",
+    ]);
+  });
+
+  it("keeps each object's own identity through the reordering", async () => {
+    const parsed = await parseLbx(await buildLbx(interleaved));
+    expect(parsed.objects.map((o) => o.position.x)).toEqual([0, 10, 20, 30, 40, 50]);
+  });
+
+  it("loses no object when the document interleaves types", async () => {
+    const parsed = await parseLbx(await buildLbx(interleaved));
+    expect(parsed.objects).toHaveLength(interleaved.objects.length);
+  });
+
+  /**
+   * The stronger case: files P-touch wrote, where the interleaving is its own
+   * and not a shape we invented to fail against. `Filament Label 3` is the one
+   * worth naming — its rectangle is the first object in the document, a
+   * background under the text, and the old parser handed it back last, which is
+   * to say on top of everything it was drawn beneath.
+   */
+  const ptouchFixtures: Array<[string, string[]]> = [
+    ["Filament Label 3.lbx", ["rect", "text", "text", "text", "text"]],
+    ["Two-line cable label.lbx", ["text", "line", "text"]],
+    [
+      "Keyboard switch canister labels.lbx",
+      ["text", "text", "text", "text", "text", "line", "text"],
+    ],
+  ];
+
+  for (const [name, expected] of ptouchFixtures) {
+    it(`preserves the order P-touch wrote in ${name}`, async () => {
+      const parsed = await parseLbx(
+        await readFile(fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url))),
+      );
+      expect(parsed.objects.map((o) => o.type)).toEqual(expected);
+    });
+  }
+
+  it("orders around an object type this library does not model", async () => {
+    // P-touch writes object kinds bil-lbx has no parser for — tables, groups,
+    // cable-label symbols. Those show up in the element order and in no bucket,
+    // so the ordering has to step over a name it cannot place instead of
+    // falling out of step with the objects it can.
+    const lbx = await buildLbx(interleaved);
+    const zip = await JSZip.loadAsync(lbx);
+    const xml = await zip.file("label.xml")!.async("string");
+    const withTable = xml.replace(
+      "<barcode:barcode>",
+      "<table:table><pt:data>x</pt:data></table:table><barcode:barcode>",
+    );
+    expect(withTable).not.toBe(xml);
+    zip.file("label.xml", withTable);
+
+    const parsed = await parseLbx(await zip.generateAsync({ type: "uint8array" }));
+    expect(parsed.objects.map((o) => o.position.x)).toEqual([0, 10, 20, 30, 40, 50]);
   });
 });
