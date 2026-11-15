@@ -77,8 +77,10 @@ export async function parseLbx(
   }
 
   const version = attr(ptDoc, "version");
-  const body = ptDoc["pt:body"];
-  const sheet = body["style:sheet"];
+  const sheet = ptDoc["pt:body"]?.["style:sheet"];
+  if (!sheet?.["style:paper"]) {
+    throw new Error("Invalid label.xml: missing pt:body/style:sheet/style:paper");
+  }
 
   // Parse paper config
   const paper = parsePaper(sheet["style:paper"]);

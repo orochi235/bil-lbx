@@ -53,3 +53,13 @@ describe("parseLbx warnings", () => {
     expect(warnings).toEqual([]);
   });
 });
+
+describe("parseLbx on a malformed document", () => {
+  it("names the missing sheet rather than throwing a TypeError", async () => {
+    const zip = new JSZip();
+    zip.file("label.xml", "<pt:document><pt:body></pt:body></pt:document>");
+    await expect(parseLbx(await zip.generateAsync({ type: "uint8array" }))).rejects.toThrow(
+      "missing pt:body/style:sheet/style:paper",
+    );
+  });
+});
