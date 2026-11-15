@@ -17,7 +17,11 @@ An `.lbx` file is a ZIP archive containing:
 - `src/types.ts` — all types, tape definitions, config interfaces
 - `src/xml.ts` — minimal zero-dep XML builder
 - `src/serialize.ts` — converts `LabelConfig` → XML + image list
-- `src/parse.ts` — reads .lbx back into `LabelConfig`
+- `src/parse.ts` — reads .lbx back into `LabelConfig`; anything it cannot carry
+  (a missing image entry, an unmodeled object kind) goes to `onWarning`, or
+  throws under `strict`
+- `src/parse-objects.ts` — one parser per object kind; `src/parse-attrs.ts` —
+  the attribute readers they share
 - `src/build.ts` — packs into ZIP via jszip
 - `src/bmp.ts` — `decodeBmp32`/`encodeBmp32`: RGBA codec for the embedded
   32bpp BMPs (P-touch Editor macOS carries artwork in the alpha byte, which

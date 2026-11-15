@@ -334,3 +334,28 @@ export function tapeFormatForWidth(widthPt: number): number | undefined {
   }
   return undefined;
 }
+
+/**
+ * Something in a file that `parseLbx` could not carry into the LabelConfig,
+ * so it will not survive a `buildLbx` of the result.
+ */
+export interface LbxWarning {
+  /**
+   * `missing-image`: an image object whose BMP entry is absent from the
+   * archive, parsed with empty `imageData`. `unsupported-object`: a child of
+   * `pt:objects` of a kind this library does not model, dropped.
+   */
+  code: "missing-image" | "unsupported-object";
+  message: string;
+  /** The element name, for `unsupported-object`. */
+  element?: string;
+  /** The archive entry the image named, for `missing-image`. */
+  fileName?: string;
+}
+
+export interface ParseOptions {
+  /** Called once per thing the parse could not carry over. */
+  onWarning?: (warning: LbxWarning) => void;
+  /** Throw on the first warning instead of returning a lossy LabelConfig. */
+  strict?: boolean;
+}
