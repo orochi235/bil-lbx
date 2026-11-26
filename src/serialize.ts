@@ -48,7 +48,7 @@ function brushNode(brush: BrushConfig | undefined): XmlNode {
     style: cfg.style,
     color: cfg.color ?? "#000000",
     printColorNumber: "1",
-    id: "0",
+    id: cfg.id ?? 0,
   });
 }
 
@@ -75,7 +75,7 @@ function objectStyleNode(pos: ObjectPosition, pen?: PenConfig, brush?: BrushConf
       height: p(pos.height),
       backColor: "#FFFFFF",
       backPrintColorNumber: "0",
-      ropMode: "COPYPEN",
+      ropMode: pos.ropMode ?? "COPYPEN",
       angle: pos.angle ?? 0,
       anchor: pos.anchor ?? "TOPLEFT",
       flip: pos.flip ?? "NONE",
@@ -430,8 +430,8 @@ export function serializeLabel(config: LabelConfig): { labelXml: string; propXml
     monochromeDisplay: "true",
     printColorDisplay: "false",
     printColorsID: "0",
-    paperColor: "#FFFFFF",
-    paperInk: "#000000",
+    paperColor: paper.paperColor ?? "#FFFFFF",
+    paperInk: paper.paperInk ?? "#000000",
     split: "1",
     // Derived from the width the caller gave rather than defaulted to 12mm's
     // code: a 24mm paper with no explicit format used to serialize as a 12mm

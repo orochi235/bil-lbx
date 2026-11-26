@@ -23,6 +23,7 @@ import type {
   AnchorPoint,
   FlipMode,
   RectShape,
+  RopMode,
   ArrowStyle,
   ImageEffect,
   MonoOperation,
@@ -48,6 +49,9 @@ function parsePosition(styleNode: Record<string, unknown>): ObjectPosition {
 
   const flip = attr(styleNode, "flip") as FlipMode | undefined;
   if (flip && flip !== "NONE") pos.flip = flip;
+
+  const ropMode = attr(styleNode, "ropMode") as RopMode | undefined;
+  if (ropMode && ropMode !== "COPYPEN") pos.ropMode = ropMode;
 
   return pos;
 }
@@ -82,6 +86,9 @@ function parseBrush(node: Record<string, unknown>): BrushConfig | undefined {
 
   const color = attr(node, "color");
   if (color) brush.color = color;
+
+  const id = numAttr(node, "id");
+  if (id !== undefined && id !== 0) brush.id = id;
 
   return brush;
 }

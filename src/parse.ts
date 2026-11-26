@@ -311,6 +311,12 @@ function parsePaper(node: Record<string, unknown>): PaperConfig {
   const printerName = attr(node, "printerName");
   if (printerName) paper.printerName = printerName;
 
+  const paperColor = attr(node, "paperColor");
+  if (paperColor) paper.paperColor = paperColor;
+
+  const paperInk = attr(node, "paperInk");
+  if (paperInk) paper.paperInk = paperInk;
+
   return paper;
 }
 
