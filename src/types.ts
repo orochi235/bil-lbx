@@ -19,7 +19,16 @@ export interface Color {
 }
 
 export type PenStyle = "NULL" | "SOLID" | "DASH" | "DOT" | "DASHDOT" | "DASHDOTDOT" | "INSIDEFRAME";
-export type BrushStyle = "NULL" | "SOLID" | "HATCHED";
+export type BrushStyle = "NULL" | "SOLID" | "HATCHED" | "PATTERN";
+/**
+ * Win32 binary raster operation (`SetROP2`'s `R2_*` names without the prefix).
+ * `COPYPEN` paints the pen colour; `NOTCOPYPEN` paints its inverse, which on
+ * ink-on-tape stock means bare tape. P-touch Editor uses it for reversed text
+ * and knocked-out shapes.
+ */
+export type RopMode =
+  | "BLACK" | "NOTMERGEPEN" | "MASKNOTPEN" | "NOTCOPYPEN" | "MASKPENNOT" | "NOT" | "XORPEN" | "NOTMASKPEN"
+  | "MASKPEN" | "NOTXORPEN" | "NOP" | "MERGENOTPEN" | "COPYPEN" | "MERGEPENNOT" | "MERGEPEN" | "WHITE";
 export type FlipMode = "NONE" | "HORIZONTAL" | "VERTICAL" | "BOTH";
 export type AnchorPoint = "TOPLEFT" | "TOPCENTER" | "TOPRIGHT" | "MIDDLELEFT" | "MIDDLECENTER" | "MIDDLERIGHT" | "BOTTOMLEFT" | "BOTTOMCENTER" | "BOTTOMRIGHT";
 
@@ -55,6 +64,10 @@ export interface PaperConfig {
   format?: number;
   printerID?: number;
   printerName?: string;
+  /** Tape colour, e.g. "#000000" for black tape. Default "#FFFFFF". */
+  paperColor?: string;
+  /** Ink colour, e.g. "#FFFFFF" for white-on-black tape. Default "#000000". */
+  paperInk?: string;
 }
 
 export interface FontConfig {
@@ -82,6 +95,8 @@ export interface ObjectPosition {
   angle?: number;
   anchor?: AnchorPoint;
   flip?: FlipMode;
+  /** How the object combines with what is under it. Default "COPYPEN". */
+  ropMode?: RopMode;
 }
 
 export interface PenConfig {
@@ -94,6 +109,8 @@ export interface PenConfig {
 export interface BrushConfig {
   style: BrushStyle;
   color?: string;
+  /** Pattern number of a `PATTERN` brush. Default 0. */
+  id?: number;
 }
 
 // --- Object definitions ---

@@ -264,6 +264,29 @@ describe("parseLbx", () => {
     });
   });
 
+  describe("White on black tape label (raster ops, patterned brushes)", () => {
+    it("parses the tape and ink colours", async () => {
+      const config = await parseLbx(loadFixture("White on black tape label"));
+      expect(config.paper.paperColor).toBe("#000000");
+      expect(config.paper.paperInk).toBe("#FFFFFF");
+    });
+
+    it("parses each object's raster op, omitting the COPYPEN default", async () => {
+      const config = await parseLbx(loadFixture("White on black tape label"));
+      const ops = config.objects.map((obj) => obj.position.ropMode ?? "COPYPEN");
+      expect(ops.filter((op) => op === "NOTCOPYPEN")).toHaveLength(6);
+      expect(ops.filter((op) => op === "COPYPEN")).toHaveLength(5);
+      expect(config.objects.some((obj) => "ropMode" in obj.position && obj.position.ropMode === undefined)).toBe(false);
+    });
+
+    it("parses PATTERN brushes with their pattern number", async () => {
+      const config = await parseLbx(loadFixture("White on black tape label"));
+      const brushes = config.objects.flatMap((obj) => ("brush" in obj && obj.brush ? [obj.brush] : []));
+      expect(brushes.length).toBeGreaterThan(0);
+      for (const brush of brushes) expect(brush).toMatchObject({ style: "PATTERN", id: 1 });
+    });
+  });
+
   describe("generator", () => {
     it("reports P-touch Editor as the generator of its own files", async () => {
       // Worth knowing because it says how far a field can be trusted: P-touch

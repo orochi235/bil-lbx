@@ -46,6 +46,56 @@ describe("round-trip: build → parse", () => {
     }
   });
 
+  it("round-trips tape colours, raster ops and patterned brushes", async () => {
+    const config: LabelConfig = {
+      paper: { width: TAPE["12mm"].width, format: TAPE["12mm"].format, paperColor: "#000000", paperInk: "#FFFFFF" },
+      objects: [
+        {
+          type: "rect",
+          position: { x: 5, y: 2, width: 36, height: 28 },
+          shape: "RECTANGLE",
+          brush: { style: "PATTERN", color: "#000000", id: 1 },
+        },
+        {
+          type: "rect",
+          position: { x: 8, y: 5, width: 30, height: 22, ropMode: "NOTCOPYPEN" },
+          shape: "RECTANGLE",
+          brush: { style: "PATTERN", color: "#000000", id: 1 },
+        },
+      ],
+    };
+
+    const parsed = await parseLbx(await buildLbx(config));
+
+    expect(parsed.paper.paperColor).toBe("#000000");
+    expect(parsed.paper.paperInk).toBe("#FFFFFF");
+    expect(parsed.objects.map((obj) => obj.position.ropMode)).toEqual([undefined, "NOTCOPYPEN"]);
+    for (const obj of parsed.objects) {
+      if (obj.type === "rect") expect(obj.brush).toEqual({ style: "PATTERN", color: "#000000", id: 1 });
+    }
+  });
+
+  it("keeps a real white-on-black label's colours and raster ops through parse → build → parse", async () => {
+    const file = await readFile(fileURLToPath(new URL("./fixtures/White on black tape label.lbx", import.meta.url)));
+    const first = await parseLbx(file);
+    const second = await parseLbx(await buildLbx(first));
+
+    expect(second.paper).toMatchObject({ paperColor: "#000000", paperInk: "#FFFFFF" });
+    expect(second.objects.map((obj) => obj.position.ropMode)).toEqual(first.objects.map((obj) => obj.position.ropMode));
+    expect(first.objects.filter((obj) => obj.position.ropMode === "NOTCOPYPEN")).toHaveLength(6);
+  });
+
+  it("writes the previous defaults when the config leaves these out", async () => {
+    const lbx = await buildLbx({
+      paper: { width: TAPE["12mm"].width },
+      objects: [{ type: "rect", position: { x: 5, y: 2, width: 36, height: 28 }, shape: "RECTANGLE" }],
+    });
+    const xml = await (await JSZip.loadAsync(lbx)).file("label.xml")!.async("string");
+    expect(xml).toContain('paperColor="#FFFFFF" paperInk="#000000"');
+    expect(xml).toContain('ropMode="COPYPEN"');
+    expect(xml).toMatch(/<pt:brush style="NULL"[^>]* id="0"/);
+  });
+
   it("round-trips a rect with rounded corners", async () => {
     const config: LabelConfig = {
       paper: { width: TAPE["12mm"].width, format: TAPE["12mm"].format },
